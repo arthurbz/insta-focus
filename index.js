@@ -5,9 +5,6 @@ document.addEventListener("DOMContentLoaded", async function () {
   chrome.storage.sync.get(["feedOn"], (result) => {
     let feedOn = result.feedOn !== undefined ? result.feedOn : true;
     toggleButton.textContent = feedOn ? "Turn Feed Off" : "Turn Feed On";
-
-    // Apply the current state to the page
-    applyFeedState(feedOn);
   });
 
   toggleButton.addEventListener("click", async () => {
@@ -25,23 +22,17 @@ document.addEventListener("DOMContentLoaded", async function () {
       // Apply the new state to the page
       chrome.scripting.executeScript({
         target: { tabId: tab.id },
-        func: applyFeedState,
+        func: (feedOn) => {
+          const posts = document.getElementsByTagName("article");
+          const firstPost = posts[0];
+
+          if (firstPost) {
+            firstPost.parentElement.parentElement.parentElement.style.display =
+              feedOn ? "block" : "none";
+          }
+        },
         args: [feedOn],
       });
     });
   });
-
-  function applyFeedState(feedOn) {
-    function getFeedPosts() {
-      return document.getElementsByTagName("article");
-    }
-
-    const posts = getFeedPosts();
-    const firstPost = posts[0];
-    if (firstPost) {
-      firstPost.parentElement.parentElement.parentElement.style.display = feedOn
-        ? "block"
-        : "none";
-    }
-  }
 });
