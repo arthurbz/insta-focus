@@ -1,54 +1,47 @@
-document.getElementById("toggleFeedButton").addEventListener("click", toggleFeed)
+document.addEventListener("DOMContentLoaded", async function () {
+  const toggleButton = document.getElementById("toggle-button");
 
-const FEED_STATUS = Object.freeze({
-    ON: 1,
-    OFF: 2
-})
+  // Load the feed state from storage
+  chrome.storage.sync.get(["feedOn"], (result) => {
+    let feedOn = result.feedOn !== undefined ? result.feedOn : true;
+    toggleButton.textContent = feedOn ? "Turn Feed Off" : "Turn Feed On";
 
-function getFeedPosts() {
-    return document.getElementsByTagName("article")
-}
+    // Apply the current state to the page
+    applyFeedState(feedOn);
+  });
 
-function removeFeed() {
-    const posts = getFeedPosts()
-    console.log(posts)
-    const firstPost = posts[0]
+  toggleButton.addEventListener("click", async () => {
+    let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
 
+    chrome.storage.sync.get(["feedOn"], (result) => {
+      let feedOn = result.feedOn !== undefined ? result.feedOn : true;
+      feedOn = !feedOn;
+
+      // Save the new state to storage
+      chrome.storage.sync.set({ feedOn: feedOn });
+
+      toggleButton.textContent = feedOn ? "Turn Feed Off" : "Turn Feed On";
+
+      // Apply the new state to the page
+      chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: applyFeedState,
+        args: [feedOn],
+      });
+    });
+  });
+
+  function applyFeedState(feedOn) {
+    function getFeedPosts() {
+      return document.getElementsByTagName("article");
+    }
+
+    const posts = getFeedPosts();
+    const firstPost = posts[0];
     if (firstPost) {
-        firstPost.parentElement.parentElement.parentElement.style.display = "none"
+      firstPost.parentElement.parentElement.parentElement.style.display = feedOn
+        ? "block"
+        : "none";
     }
-}
-
-function getNewFeedStatus(currentFeedStatus) {
-    return currentFeedStatus == FEED_STATUS.OFF
-        ? FEED_STATUS.ON
-        : FEED_STATUS.OFF
-}
-
-function getFeedStatusDescription(feedStatus) {
-    const [key] = Object.entries(FEED_STATUS).find(([key, value]) => value === feedStatus)
-    return key
-}
-
-async function toggleFeed() {
-    const currentFeedStatus = await getStoreItem("feedStatus")
-    const newFeedStatus = getNewFeedStatus(currentFeedStatus)
-
-    if (newFeedStatus == FEED_STATUS.OFF) {
-        removeFeed()
-    }
-
-    await setStoreItem("feedStatus", newFeedStatus) 
-    document.getElementById("feedStatus").innerText = getFeedStatusDescription(newFeedStatus)
-}
-
-async function setStoreItem(key, value) {
-    await chrome.storage.local.set({ [key]: value })
-    console.log(`SET: Key: ${key}; Value: ${value}`)
-}
-
-async function getStoreItem(key) {
-    const { [key]: value } = await chrome.storage.local.get(key)
-    console.log(`GET: Key: ${key}; Value: ${value}`)
-    return value
-}
+  }
+});

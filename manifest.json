@@ -7,11 +7,5 @@
     "default_popup": "index.html",
     "default_icon": "logo.png"
   },
-  "permissions": ["storage"],
-  "host_permissions": [
-    "https://www.instagram.com/*",
-    "http://www.instagram.com/*",
-    "https://instagram.com/*",
-    "http://instagram.com/*"
-  ]
+  "permissions": ["activeTab", "scripting", "storage"]
 }
