@@ -1,78 +1,61 @@
 document.addEventListener("DOMContentLoaded", async function () {
-  const toggleFeedButton = document.getElementById("toggle-feed-button");
-  const toggleStoriesButton = document.getElementById("toggle-stories-button");
+  const storiesToggle = document.getElementById("stories-toggle");
+  const feedToggle = document.getElementById("feed-toggle");
 
-  // Load the feed state from storage
-  chrome.storage.sync.get(["feedOn", "storiesOn"], (result) => {
-    let feedOn = result.feedOn !== undefined ? result.feedOn : true;
+  // Load the state from storage
+  chrome.storage.sync.get(["storiesOn", "feedOn"], (result) => {
     let storiesOn = result.storiesOn !== undefined ? result.storiesOn : true;
-    toggleFeedButton.textContent = feedOn ? "Turn Feed Off" : "Turn Feed On";
-    toggleStoriesButton.textContent = storiesOn ? "Turn Stories Off" : "Turn Stories On";
+    let feedOn = result.feedOn !== undefined ? result.feedOn : true;
+
+    storiesToggle.checked = storiesOn;
+    feedToggle.checked = feedOn;
   });
 
-  toggleFeedButton.addEventListener("click", async () => {
+  storiesToggle.addEventListener("change", async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    let storiesOn = storiesToggle.checked;
 
-    chrome.storage.sync.get(["feedOn"], (result) => {
-      let feedOn = result.feedOn !== undefined ? result.feedOn : true;
-      feedOn = !feedOn;
+    // Save the new state to storage
+    chrome.storage.sync.set({ storiesOn: storiesOn });
 
-      // Save the new state to storage
-      chrome.storage.sync.set({ feedOn: feedOn });
+    // Apply the new state to the page
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (storiesOn) => {
+        const storyContainer = document.querySelectorAll(
+          "[role='presentation']"
+        )[0];
 
-      toggleFeedButton.textContent = feedOn ? "Turn Feed Off" : "Turn Feed On";
-
-      // Apply the new state to the page
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: (feedOn) => {
-          function getFeedPosts() {
-            return document.getElementsByTagName("article");
-          }
-
-          const posts = getFeedPosts();
-          const firstPost = posts[0];
-
-          console.log("INDEX.JS - Feed");
-          console.log("POSTS", posts);
-          console.log("FIRST POST", firstPost);
-
-          if (firstPost) {
-            firstPost.parentElement.parentElement.parentElement.style.display =
-              feedOn ? "block" : "none";
-          }
-        },
-        args: [feedOn],
-      });
+        if (storyContainer) {
+          storyContainer.parentElement.parentElement.style.display = storiesOn
+            ? "block"
+            : "none";
+        }
+      },
+      args: [storiesOn],
     });
   });
 
-  toggleStoriesButton.addEventListener("click", async () => {
+  feedToggle.addEventListener("change", async () => {
     let [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    let feedOn = feedToggle.checked;
 
-    chrome.storage.sync.get(["storiesOn"], (result) => {
-      let storiesOn = result.storiesOn !== undefined ? result.storiesOn : true;
-      storiesOn = !storiesOn;
+    // Save the new state to storage
+    chrome.storage.sync.set({ feedOn: feedOn });
 
-      // Save the new state to storage
-      chrome.storage.sync.set({ storiesOn: storiesOn });
+    // Apply the new state to the page
+    chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: (feedOn) => {
+        const posts = document.getElementsByTagName("article");
+        const firstPost = posts[0];
 
-      toggleStoriesButton.textContent = storiesOn ? "Turn Stories Off" : "Turn Stories On";
-
-      // Apply the new state to the page
-      chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: (storiesOn) => {
-          const storyContainer = document.querySelectorAll('[role="presentation"]')[0];
-          if (storyContainer) {
-            storyContainer.parentElement.parentElement.style.display = storiesOn ? "block" : "none";
-          }
-
-          console.log("INDEX.JS - Stories");
-          console.log("STORIES", storyContainer);
-        },
-        args: [storiesOn],
-      });
+        if (firstPost) {
+          firstPost.parentElement.parentElement.parentElement.style.display =
+            feedOn ? "block" : "none";
+        }
+      },
+      args: [feedOn],
     });
   });
 });

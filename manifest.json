@@ -3,6 +3,11 @@
   "name": "Insta Focus",
   "description": "Insta Focus is a Chrome extension to get your focus back and stop doom scrolling on Instagram.",
   "version": "1.0",
+  "icons": {
+    "16": "logo.png",
+    "48": "logo.png",
+    "128": "logo.png"
+  },
   "action": {
     "default_popup": "index.html",
     "default_icon": "logo.png"
